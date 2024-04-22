@@ -1,25 +1,23 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import Input from "../../ui/Input/Input";
+import styles from "./Login.module.css"
+import ErrorMessage from "../ui/ErrorMessage/ErrorMessage";
+import Input from "../ui/Input/Input";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import ErrorMessage from "../../ui/ErrorMessage/ErrorMessage";
+import { Link } from "react-router-dom";
 
-const Register = () => {
+interface IProps {
+
+}
+const Login = ({ }: IProps) => {
   interface IFormInput {
-    name: string;
     email: string;
     password: string;
   }
 
   const schema = yup
     .object({
-      name: yup
-        .string()
-        .min(3, "name must be at least 3 characters")
-        .max(15, "name must be maximum 15 characters")
-        .required("name required"),
       email: yup.string().email("enter valid email").required("email required"),
       password: yup
         .string()
@@ -56,21 +54,8 @@ const Register = () => {
             onSubmit={handleSubmit(onSubmit)}
           >
             <p className="text-center text-lg font-medium">
-              Sign in to your account
+              Login in to your account
             </p>
-
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Name
-              </label>
-              <Input
-                {...register("name")}
-                placeholder="Enter Name"
-                type="text"
-                required={false}
-              />
-              <ErrorMessage>{errors.name?.message}</ErrorMessage>
-            </div>
 
             <div>
               <label htmlFor="email" className="sr-only">
@@ -100,14 +85,14 @@ const Register = () => {
               type="submit"
               className="block w-full rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white"
             >
-              Sign in
+              Login
             </button>
 
             <p className="text-center text-sm text-gray-500">
-              Allready have an acount?
-              <Link to={"/login"} className="underline text-sky-800">
+              Don't have an count?
+              <Link to={"/register"} className="underline text-sky-800">
                 {" "}
-                Login Here
+                signin Here
               </Link>
             </p>
           </form>
@@ -117,4 +102,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Login;
