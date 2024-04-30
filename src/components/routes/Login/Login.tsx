@@ -1,22 +1,27 @@
-import React, { useState } from "react";
-import { Link, NavigateFunction, useNavigate } from "react-router-dom";
-import Input from "../../ui/Input/Input";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
+import React, { useContext, useState } from "react";
+import styles from "./Login.module.css"
 import ErrorMessage from "../../ui/ErrorMessage/ErrorMessage";
-import { registerSchema } from "../../validation";
+import Input from "../../ui/Input/Input";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Link, NavigateFunction, useNavigate } from "react-router-dom";
+import { loginSchema } from "../../validation";
 import axiosInstance from "../../config/configAxios";
 import { Bounce, toast } from "react-toastify";
 import { IErrorApi } from "../../interfaces";
 import { AxiosError } from "axios";
+import { tokenContext } from "../../context/tokenContext";
 
-const Register = () => {
+interface IProps {
+
+}
+const Login = ({ }: IProps) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const navigate: NavigateFunction = useNavigate()
+  const token_Context = useContext(tokenContext)
+  const navigate: NavigateFunction = useNavigate();
 
   interface IFormInput {
-    username: string;
-    email: string;
+    identifier: string;
     password: string;
   }
 
@@ -24,14 +29,14 @@ const Register = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<IFormInput>({ resolver: yupResolver(registerSchema) });
+  } = useForm<IFormInput>({ resolver: yupResolver(loginSchema) });
 
-  const onSubmit: SubmitHandler<IFormInput> = async (data: IFormInput) => {
-    setLoading(true);
+  const onSubmit = async (data: IFormInput) => {
+    setLoading(true)
     try {
-      const register = await axiosInstance.post("auth/local/register", data);
-      console.log(register);
-      toast.success("Sign in successfully", {
+      const login = await axiosInstance.post("auth/local", data);
+      console.log(login);
+      toast.success("Login successfully", {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -44,8 +49,10 @@ const Register = () => {
         transition: Bounce,
       });
 
+      token_Context?.setToken(login.data?.jwt)
       setTimeout(() => {
-        navigate("/login");
+        navigate("/")
+        // window.location.href= "http://localhost:5173/";
       }, 3500);
     } catch (err) {
       const errObj = err as AxiosError<IErrorApi>;
@@ -64,7 +71,7 @@ const Register = () => {
         transition: Bounce,
       });
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
   return (
@@ -85,32 +92,19 @@ const Register = () => {
             onSubmit={handleSubmit(onSubmit)}
           >
             <p className="text-center text-lg font-medium">
-              Sign in to your account
+              Login in to your account
             </p>
-
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Name
-              </label>
-              <Input
-                {...register("username")}
-                placeholder="Enter Name"
-                type="text"
-                required={false}
-              />
-              <ErrorMessage>{errors.username?.message}</ErrorMessage>
-            </div>
 
             <div>
               <label htmlFor="email" className="sr-only">
                 Email
               </label>
               <Input
-                {...register("email")}
+                {...register("identifier")}
                 placeholder="Enter email"
                 type="email"
               />
-              <ErrorMessage>{errors.email?.message}</ErrorMessage>
+              <ErrorMessage>{errors.identifier?.message}</ErrorMessage>
             </div>
 
             <div>
@@ -126,9 +120,8 @@ const Register = () => {
             </div>
 
             <button
-              type="submit"
               className={`block w-full rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-              disabled={errors.password || errors.username || errors.email? true : false}
+              disabled={errors.password || errors.identifier? true : false}
             >
               {loading ? (
                 <>
@@ -140,15 +133,15 @@ const Register = () => {
                   <span>Loading...</span>
                 </>
               ) : (
-                "Sign in"
+                "Login"
               )}
             </button>
 
             <p className="text-center text-sm text-gray-500">
-              Allready have an acount?
-              <Link to={"/login"} className="underline text-sky-800">
+              Don't have an count?
+              <Link to={"/register"} className="underline text-sky-800">
                 {" "}
-                Login Here
+                signin Here
               </Link>
             </p>
           </form>
@@ -158,4 +151,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Login;
