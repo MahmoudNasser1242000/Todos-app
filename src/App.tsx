@@ -1,4 +1,4 @@
-import { RouterProvider, createBrowserRouter, json } from 'react-router-dom'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import './App.css'
 import Layout from './components/routes/Layout/Layout'
 import Register from './components/routes/Register/Register'
