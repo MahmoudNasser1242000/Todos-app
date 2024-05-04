@@ -1,5 +1,4 @@
-import { Dialog, Transition } from "@headlessui/react";
-import { ChangeEvent, FormEvent, Fragment, MouseEventHandler, useContext, useState } from "react";
+import { ChangeEvent, FormEvent, useContext, useState } from "react";
 import Todos from "../Todos/Todos";
 import { tokenContext } from "../../context/tokenContext";
 import customQuery from "../../config/CustomQuery";
@@ -7,6 +6,10 @@ import { AxiosError } from "axios";
 import { IErrorApi, ITodo } from "../../interfaces/index";
 import Input from "../Input/Input";
 import axiosInstance from "../../config/configAxios";
+import { jwtDecode } from "jwt-decode";
+import Modal from "../Modal/Modal";
+import { faker } from '@faker-js/faker';
+import { Bounce, toast } from "react-toastify";
 
 const TodoList = () => {
     let [isOpen, setIsOpen] = useState(false);
@@ -19,8 +22,14 @@ const TodoList = () => {
     let [action, setAction] = useState<string>("");
 
     const getToken = useContext(tokenContext);
+    const decodeToken = jwtDecode(`${getToken?.token}`);
+    const [newTodo, setNewTodo] = useState({
+        user: [decodeToken?.id],
+        title: ""
+    });
+
     const { data, isLoading, error, refetch } = customQuery({
-        queryKey: ["Todos", todoToUpdate.id],
+        queryKey: ["Todos"],
         url: "users/me?populate=todos",
         config: {
             headers: {
@@ -28,17 +37,9 @@ const TodoList = () => {
             },
         },
     });
-    const Error = error as AxiosError<IErrorApi>;
+    console.log(data);
 
-    const changeTodoValue = (e: ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setTodoToUpdate((prev: ITodo) => {
-            return {
-                ...prev,
-                [name]: value,
-            };
-        });
-    };
+    const Error = error as AxiosError<IErrorApi>;
 
     function closeModal() {
         setIsOpen(false);
@@ -57,33 +58,55 @@ const TodoList = () => {
         setAction("update")
     }
 
+    const todoAction = async (method: string, url: string, meta: unknown, onSuccess: () => void) => {
+        setLoading(true);
+        try {
+            const data = await axiosInstance[method](url, meta, {
+                headers: {
+                    Authorization: `Bearer ${getToken?.token}`
+                }
+            });
+            if (data?.status === 200) {
+                onSuccess()
+            }
+        } catch (error) {
+            const Error = error as AxiosError<IErrorApi>;
+            setError(`${Error?.response?.data?.error?.message}`)
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // =========================UPDATE TODO=========================
+
+    const changeTodoValue = (e: ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setTodoToUpdate((prev: ITodo) => {
+            return {
+                ...prev,
+                [name]: value,
+            };
+        });
+    };
+
+    const onUpdateTodoSucess = () => {
+        closeModal();
+        console.log(
+            "done"
+        );
+        refetch();
+    }
+
     const updateTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (todoToUpdate.title) {
-            setLoading(true);
-            try {
-                const data = await axiosInstance.put(`todos/${todoToUpdate.id}`, { data: { title: todoToUpdate.title } }, {
-                    headers: {
-                        Authorization: `Bearer ${getToken?.token}`
-                    }
-                });
-                if (data?.status) {
-                    closeModal();
-                    console.log(
-                        "done"
-                    );
-
-                }
-            } catch (error) {
-                const Error = error as AxiosError<IErrorApi>;
-                setError(`${Error?.response?.data?.error?.message}`)
-            } finally {
-                setLoading(false);
-            }
+            todoAction("put", `todos/${todoToUpdate.id}`, { data: { title: todoToUpdate.title } }, onUpdateTodoSucess)
         } else {
             setError("You Have To Write New Title.");
         }
     };
+
+    // =========================DELETE TODO=========================
 
     const getIdToDelete = (id: string | number) => {
         setTodoToUpdate((prev) => {
@@ -95,32 +118,54 @@ const TodoList = () => {
         setIsOpen(true)
         setAction("delete");
     }
-    
-    const deleteTodo = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setLoading(true);
-        try {
-            const data = await axiosInstance.delete(`todos/${todoToUpdate.id}`, {
-                headers: {
-                    Authorization: `Bearer ${getToken?.token}`
-                }
-            });
-            if (data?.status) {
-                setIsOpen(false);
-                refetch()
-            }
-        } catch (error) {
-            const Error = error as AxiosError<IErrorApi>;
-            setError(`${Error?.response?.data?.error?.message}`)
-        } finally {
-            setLoading(false);
-        }
 
+    const onDeleteTodoSuccess = () => {
+        setIsOpen(false);
+        refetch()
+    }
+
+    const deleteTodo = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        todoAction("delete", `todos/${todoToUpdate.id}`, null, onDeleteTodoSuccess)
     };
 
+    // =========================ADD TODO=========================
+
+    const getNewTodo = (e: ChangeEvent<HTMLInputElement>) => {
+        setNewTodo((prev) => {
+            return {
+                ...prev,
+                title: e.target.value
+            }
+        })
+    }
+
+    const onAddTodoSuccess = () => {
+        setIsOpen(false);
+        setNewTodo((prev) => {
+            return {
+                ...prev,
+                title: ""
+            }
+        })
+        refetch();
+    }
+
+    const addTodo = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        todoAction("post", `todos`, { data: newTodo }, onAddTodoSuccess)
+    };
+
+    
     return (
         <>
             <div className="w-full">
+                <div className="w-full flex justify-center gap-x-3 py-5">
+                    <button className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                        onClick={() => { setIsOpen(true); setAction("post") }}>Add Todo</button>
+                    <button className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >Generate Todo</button>
+                </div>
                 {isLoading ? (
                     <div className="animate-pulse w-full">
                         <div className="w-full h-8 bg-gray-300 rounded mt-5 py-6"></div>
@@ -148,7 +193,7 @@ const TodoList = () => {
                             {Error.response?.data.error.message}.
                         </div>
                     </div>
-                ) : data?.data?.todos.length ? (
+                ) : data?.data?.todos?.length ? (
                     data.data.todos.map(
                         (todo: { title: string; id: string | number }, index: number) => (
                             <Todos
@@ -167,143 +212,91 @@ const TodoList = () => {
 
             {
                 action === "update" ? (
-                    <Transition appear show={isOpen} as={Fragment}>
-                        <Dialog as="div" className="relative z-10" onClose={closeModal}>
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0"
-                                enterTo="opacity-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                            >
-                                <div className="fixed inset-0 bg-black/25" />
-                            </Transition.Child>
-
-                            <div className="fixed inset-0 overflow-y-auto">
-                                <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                    <Transition.Child
-                                        as={Fragment}
-                                        enter="ease-out duration-300"
-                                        enterFrom="opacity-0 scale-95"
-                                        enterTo="opacity-100 scale-100"
-                                        leave="ease-in duration-200"
-                                        leaveFrom="opacity-100 scale-100"
-                                        leaveTo="opacity-0 scale-95"
-                                    >
-                                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                            {err ? (
-                                                <div className="hover:red-yellow-500 w-full mb-2 select-none border-l-4 border-red-400 bg-red-100 p-4 font-medium">
-                                                    {err}
-                                                </div>
-                                            ) : null}
-                                            <Dialog.Title
-                                                as="h3"
-                                                className="text-lg font-medium leading-6 text-gray-900"
-                                            >
-                                                Update Todo
-                                            </Dialog.Title>
-                                            <form onSubmit={updateTodo}>
-                                                <div className="mt-2">
-                                                    <Input
-                                                        name="title"
-                                                        value={todoToUpdate.title}
-                                                        onChange={changeTodoValue}
-                                                    />
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <button
-                                                        className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                                    >
-                                                        {loading ? (
-                                                            <>
-                                                                <div
-                                                                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                                                    role="status"
-                                                                ></div>{" "}
-                                                                <span>Loading...</span>
-                                                            </>
-                                                        ) : (
-                                                            "Update Your Todo"
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </Dialog.Panel>
-                                    </Transition.Child>
-                                </div>
+                    <Modal title="Update Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
+                        <form onSubmit={updateTodo}>
+                            <div className="mt-2">
+                                <Input
+                                    name="title"
+                                    value={todoToUpdate.title}
+                                    onChange={changeTodoValue}
+                                />
                             </div>
-                        </Dialog>
-                    </Transition>
+
+                            <div className="mt-4">
+                                <button
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div
+                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                                role="status"
+                                            ></div>{" "}
+                                            <span>Loading...</span>
+                                        </>
+                                    ) : (
+                                        "Update Your Todo"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
+                ) : action === "delete" ? (
+                    <Modal title="Delete Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
+                        <form onSubmit={deleteTodo}>
+                            <div className="mt-2">
+                                Are You Sure You Want To Delete This Todo?
+                            </div>
+
+                            <div className="mt-4">
+                                <button
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div
+                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                                role="status"
+                                            ></div>{" "}
+                                            <span>Loading...</span>
+                                        </>
+                                    ) : (
+                                        "Delete Your Todo"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
                 ) : (
-                    <Transition appear show={isOpen} as={Fragment}>
-                        <Dialog as="div" className="relative z-10" onClose={closeModal}>
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0"
-                                enterTo="opacity-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                            >
-                                <div className="fixed inset-0 bg-black/25" />
-                            </Transition.Child>
-
-                            <div className="fixed inset-0 overflow-y-auto">
-                                <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                    <Transition.Child
-                                        as={Fragment}
-                                        enter="ease-out duration-300"
-                                        enterFrom="opacity-0 scale-95"
-                                        enterTo="opacity-100 scale-100"
-                                        leave="ease-in duration-200"
-                                        leaveFrom="opacity-100 scale-100"
-                                        leaveTo="opacity-0 scale-95"
-                                    >
-                                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                            {err ? (
-                                                <div className="hover:red-yellow-500 w-full mb-2 select-none border-l-4 border-red-400 bg-red-100 p-4 font-medium">
-                                                    {err}
-                                                </div>
-                                            ) : null}
-                                            <Dialog.Title
-                                                as="h3"
-                                                className="text-lg font-medium leading-6 text-gray-900"
-                                            >
-                                                Delete Todo
-                                            </Dialog.Title>
-                                            <form onSubmit={deleteTodo}>
-                                                <div className="mt-2">
-                                                    Are You Sure You Want To Delete This Todo? 
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <button
-                                                        className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                                    >
-                                                        {loading ? (
-                                                            <>
-                                                                <div
-                                                                    className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                                                    role="status"
-                                                                ></div>{" "}
-                                                                <span>Loading...</span>
-                                                            </>
-                                                        ) : (
-                                                            "Delete Your Todo"
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </Dialog.Panel>
-                                    </Transition.Child>
-                                </div>
+                    <Modal title="Add New Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
+                        <form onSubmit={addTodo}>
+                            <div className="mt-2">
+                                <Input
+                                    name="title"
+                                    value={newTodo.title}
+                                    onChange={getNewTodo}
+                                />
                             </div>
-                        </Dialog>
-                    </Transition>
+                            <div className="mt-4">
+                                <button
+                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div
+                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                                role="status"
+                                            ></div>
+                                            {" "}
+                                            <span> Loading...</span>
+                                        </>
+                                    ) : (
+                                        "Add New Todo"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
                 )
             }
         </>

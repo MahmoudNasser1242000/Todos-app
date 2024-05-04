@@ -9,5 +9,8 @@ export default defineConfig({
     postcss: {
       plugins: [tailwindcss()],
     },
+  },
+  optimizeDeps: {
+    exclude: ['js-big-decimal']
   }
 })
