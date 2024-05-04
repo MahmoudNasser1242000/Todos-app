@@ -33,13 +33,16 @@ const NavBar = () => {
               </Link>
             </div>
           ) : (
-            <Link
-              to={"/login"}
-              className="rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-indigo-700 transition hover:text-indigo-700/65 sm:block"
-              onClick={() => { token_contxt.setToken(null) }}
-            >
-              Logout
-            </Link>
+            <div className="flex items-center gap-x-4">
+              <Link to={"/all-todos"} className="text-white">All Todos</Link>
+              <Link
+                to={"/login"}
+                className="rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-indigo-700 transition hover:text-indigo-700/65 sm:block"
+                onClick={() => { token_contxt.setToken(null) }}
+              >
+                Logout
+              </Link>
+            </div>
           )}
         </div>
       </header>

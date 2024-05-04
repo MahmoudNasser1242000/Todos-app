@@ -8,7 +8,7 @@ import Input from "../Input/Input";
 import axiosInstance from "../../config/configAxios";
 import { jwtDecode } from "jwt-decode";
 import Modal from "../Modal/Modal";
-import { faker } from '@faker-js/faker';
+import { faker } from "@faker-js/faker";
 import { Bounce, toast } from "react-toastify";
 
 const TodoList = () => {
@@ -25,7 +25,7 @@ const TodoList = () => {
     const decodeToken = jwtDecode(`${getToken?.token}`);
     const [newTodo, setNewTodo] = useState({
         user: [decodeToken?.id],
-        title: ""
+        title: "",
     });
 
     const { data, isLoading, error, refetch } = customQuery({
@@ -37,7 +37,7 @@ const TodoList = () => {
             },
         },
     });
-    console.log(data);
+    // console.log(data);
 
     const Error = error as AxiosError<IErrorApi>;
 
@@ -55,27 +55,32 @@ const TodoList = () => {
             title,
         });
         setIsOpen(true);
-        setAction("update")
+        setAction("update");
     }
 
-    const todoAction = async (method: string, url: string, meta: unknown, onSuccess: () => void) => {
+    const todoAction = async (
+        method: string,
+        url: string,
+        meta: unknown,
+        onSuccess: () => void
+    ) => {
         setLoading(true);
         try {
             const data = await axiosInstance[method](url, meta, {
                 headers: {
-                    Authorization: `Bearer ${getToken?.token}`
-                }
+                    Authorization: `Bearer ${getToken?.token}`,
+                },
             });
             if (data?.status === 200) {
-                onSuccess()
+                onSuccess();
             }
         } catch (error) {
             const Error = error as AxiosError<IErrorApi>;
-            setError(`${Error?.response?.data?.error?.message}`)
+            setError(`${Error?.response?.data?.error?.message}`);
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     // =========================UPDATE TODO=========================
 
@@ -91,16 +96,19 @@ const TodoList = () => {
 
     const onUpdateTodoSucess = () => {
         closeModal();
-        console.log(
-            "done"
-        );
+        console.log("done");
         refetch();
-    }
+    };
 
     const updateTodo = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+        e.preventDefault();
         if (todoToUpdate.title) {
-            todoAction("put", `todos/${todoToUpdate.id}`, { data: { title: todoToUpdate.title } }, onUpdateTodoSucess)
+            await todoAction(
+                "put",
+                `todos/${todoToUpdate.id}`,
+                { data: { title: todoToUpdate.title } },
+                onUpdateTodoSucess
+            );
         } else {
             setError("You Have To Write New Title.");
         }
@@ -112,21 +120,21 @@ const TodoList = () => {
         setTodoToUpdate((prev) => {
             return {
                 ...prev,
-                id
-            }
-        })
-        setIsOpen(true)
+                id,
+            };
+        });
+        setIsOpen(true);
         setAction("delete");
-    }
+    };
 
     const onDeleteTodoSuccess = () => {
         setIsOpen(false);
-        refetch()
-    }
+        refetch();
+    };
 
     const deleteTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        todoAction("delete", `todos/${todoToUpdate.id}`, null, onDeleteTodoSuccess)
+        await todoAction("delete", `todos/${todoToUpdate.id}`, null, onDeleteTodoSuccess);
     };
 
     // =========================ADD TODO=========================
@@ -135,36 +143,80 @@ const TodoList = () => {
         setNewTodo((prev) => {
             return {
                 ...prev,
-                title: e.target.value
-            }
-        })
-    }
+                title: e.target.value,
+            };
+        });
+    };
 
     const onAddTodoSuccess = () => {
         setIsOpen(false);
         setNewTodo((prev) => {
             return {
                 ...prev,
-                title: ""
-            }
-        })
+                title: "",
+            };
+        });
         refetch();
-    }
+    };
 
     const addTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        todoAction("post", `todos`, { data: newTodo }, onAddTodoSuccess)
+        await todoAction("post", `todos`, { data: newTodo }, onAddTodoSuccess);
     };
 
-    
+    // =========================GENERATE TODO=========================
+    const onGenerateTodosSuccess = (i: number) => {
+        if (i === 0) {
+            toast.success("Generates Todos Successfully", {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: false,
+                pauseOnHover: false,
+                draggable: false,
+                progress: undefined,
+                theme: "light",
+                closeButton: false,
+                transition: Bounce,
+            });
+        }
+    };
+    const generateTodo = async () => {
+        for (let i = 0; i < 50; i++) {
+            await todoAction(
+                "post",
+                "todos",
+                {
+                    data: {
+                        title: faker.word.words({ count: { min: 5, max: 10 } }),
+                        user: decodeToken?.id,
+                    },
+                },
+                () => {
+                    onGenerateTodosSuccess(i);
+                }
+            );
+        }
+    };
     return (
         <>
             <div className="w-full">
                 <div className="w-full flex justify-center gap-x-3 py-5">
-                    <button className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                        onClick={() => { setIsOpen(true); setAction("post") }}>Add Todo</button>
-                    <button className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >Generate Todo</button>
+                    <button
+                        className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                        onClick={() => {
+                            setIsOpen(true);
+                            setAction("post");
+                        }}
+                    >
+                        Add Todo
+                    </button>
+                    <button
+                        onClick={generateTodo}
+                        className={`block rounded-[5px] bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        Generate Todo
+                    </button>
                 </div>
                 {isLoading ? (
                     <div className="animate-pulse w-full">
@@ -210,95 +262,97 @@ const TodoList = () => {
                 )}
             </div>
 
-            {
-                action === "update" ? (
-                    <Modal title="Update Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
-                        <form onSubmit={updateTodo}>
-                            <div className="mt-2">
-                                <Input
-                                    name="title"
-                                    value={todoToUpdate.title}
-                                    onChange={changeTodoValue}
-                                />
-                            </div>
+            {action === "update" ? (
+                <Modal
+                    title="Update Todo"
+                    err={err}
+                    isOpen={isOpen}
+                    closeModal={closeModal}
+                >
+                    <form onSubmit={updateTodo}>
+                        <div className="mt-2">
+                            <Input
+                                name="title"
+                                value={todoToUpdate.title}
+                                onChange={changeTodoValue}
+                            />
+                        </div>
 
-                            <div className="mt-4">
-                                <button
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div
-                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                                role="status"
-                                            ></div>{" "}
-                                            <span>Loading...</span>
-                                        </>
-                                    ) : (
-                                        "Update Your Todo"
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </Modal>
-                ) : action === "delete" ? (
-                    <Modal title="Delete Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
-                        <form onSubmit={deleteTodo}>
-                            <div className="mt-2">
-                                Are You Sure You Want To Delete This Todo?
-                            </div>
+                        <div className="mt-4">
+                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                {loading ? (
+                                    <>
+                                        <div
+                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                            role="status"
+                                        ></div>{" "}
+                                        <span>Loading...</span>
+                                    </>
+                                ) : (
+                                    "Update Your Todo"
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            ) : action === "delete" ? (
+                <Modal
+                    title="Delete Todo"
+                    err={err}
+                    isOpen={isOpen}
+                    closeModal={closeModal}
+                >
+                    <form onSubmit={deleteTodo}>
+                        <div className="mt-2">
+                            Are You Sure You Want To Delete This Todo?
+                        </div>
 
-                            <div className="mt-4">
-                                <button
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div
-                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                                role="status"
-                                            ></div>{" "}
-                                            <span>Loading...</span>
-                                        </>
-                                    ) : (
-                                        "Delete Your Todo"
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </Modal>
-                ) : (
-                    <Modal title="Add New Todo" err={err} isOpen={isOpen} closeModal={closeModal}>
-                        <form onSubmit={addTodo}>
-                            <div className="mt-2">
-                                <Input
-                                    name="title"
-                                    value={newTodo.title}
-                                    onChange={getNewTodo}
-                                />
-                            </div>
-                            <div className="mt-4">
-                                <button
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div
-                                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                                role="status"
-                                            ></div>
-                                            {" "}
-                                            <span> Loading...</span>
-                                        </>
-                                    ) : (
-                                        "Add New Todo"
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </Modal>
-                )
-            }
+                        <div className="mt-4">
+                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                {loading ? (
+                                    <>
+                                        <div
+                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                            role="status"
+                                        ></div>{" "}
+                                        <span>Loading...</span>
+                                    </>
+                                ) : (
+                                    "Delete Your Todo"
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            ) : (
+                <Modal
+                    title="Add New Todo"
+                    err={err}
+                    isOpen={isOpen}
+                    closeModal={closeModal}
+                >
+                    <form onSubmit={addTodo}>
+                        <div className="mt-2">
+                            <Input name="title" value={newTodo.title} onChange={getNewTodo} />
+                        </div>
+                        <div className="mt-4">
+                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                {loading ? (
+                                    <>
+                                        <div
+                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                            role="status"
+                                        ></div>{" "}
+                                        <span> Loading...</span>
+                                    </>
+                                ) : (
+                                    "Add New Todo"
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
         </>
     );
 };
