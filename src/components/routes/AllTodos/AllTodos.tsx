@@ -23,7 +23,7 @@ const AllTodos = ({ }: IProps) => {
 
   const Error = error as AxiosError<IErrorApi>;
   return (
-    <div className="py-7">
+    <div className="py-7 px-8">
       {
         isLoading ? (
 
@@ -67,12 +67,13 @@ const AllTodos = ({ }: IProps) => {
           </div>
         ) : data?.data?.data?.length ? (
           <ol className="relative border-s border-gray-200 dark:border-gray-700">
-            {data?.data?.data?.map((todo: {id: number, attributes: {createdAt: string, title: string}}, index:number) => (
+            {data?.data?.data?.map((todo: {id: number, attributes: {createdAt: string, title: string, description: string}}, index:number) => (
 
             <li className="mb-10 ms-4" key={todo.id}>
-              <div className="absolute w-5 h-5 text-[11px] flex justify-center items-center text-stone-600 bg-gray-200 rounded-full mt-1.5 -start-2.5 border border-white dark:border-gray-900 dark:bg-gray-700" >{index+1}</div>
+              <div className="absolute w-5 h-5 text-[11px] flex justify-center items-center text-stone-600 bg-gray-200 rounded-full -start-2.5  border border-white dark:border-gray-900 dark:bg-gray-700" >{index+1}</div>
               <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">{todo.attributes.createdAt}</time>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{todo.attributes.title}</h3>
+              <p className="mb-4 w-[70%] text-base font-normal text-gray-500 dark:text-gray-400">{todo.attributes.description}</p>
             </li>
             ))
               }

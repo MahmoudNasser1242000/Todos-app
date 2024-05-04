@@ -18,6 +18,7 @@ const TodoList = () => {
     let [todoToUpdate, setTodoToUpdate] = useState<ITodo>({
         id: "",
         title: "",
+        description: ""
     });
     let [action, setAction] = useState<string>("");
 
@@ -26,6 +27,7 @@ const TodoList = () => {
     const [newTodo, setNewTodo] = useState({
         user: [decodeToken?.id],
         title: "",
+        description: ""
     });
 
     const { data, isLoading, error, refetch } = customQuery({
@@ -49,10 +51,11 @@ const TodoList = () => {
         });
     }
 
-    function openModal(id: string | number, title: string) {
+    function openModal(id: string | number, title: string, description: string) {
         setTodoToUpdate({
             id,
             title,
+            description
         });
         setIsOpen(true);
         setAction("update");
@@ -84,7 +87,7 @@ const TodoList = () => {
 
     // =========================UPDATE TODO=========================
 
-    const changeTodoValue = (e: ChangeEvent<HTMLInputElement>) => {
+    const changeTodoValue = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> ) => {
         const { name, value } = e.target;
         setTodoToUpdate((prev: ITodo) => {
             return {
@@ -106,7 +109,7 @@ const TodoList = () => {
             await todoAction(
                 "put",
                 `todos/${todoToUpdate.id}`,
-                { data: { title: todoToUpdate.title } },
+                { data: { title: todoToUpdate.title, description: todoToUpdate.description } },
                 onUpdateTodoSucess
             );
         } else {
@@ -139,11 +142,12 @@ const TodoList = () => {
 
     // =========================ADD TODO=========================
 
-    const getNewTodo = (e: ChangeEvent<HTMLInputElement>) => {
+    const getNewTodo = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const {name, value} = e.target;
         setNewTodo((prev) => {
             return {
                 ...prev,
-                title: e.target.value,
+                [name]: value,
             };
         });
     };
@@ -180,6 +184,7 @@ const TodoList = () => {
                 transition: Bounce,
             });
         }
+        refetch()
     };
     const generateTodo = async () => {
         for (let i = 0; i < 50; i++) {
@@ -189,6 +194,7 @@ const TodoList = () => {
                 {
                     data: {
                         title: faker.word.words({ count: { min: 5, max: 10 } }),
+                        description: faker.lorem.paragraphs({ min: 2, max: 3 }),
                         user: decodeToken?.id,
                     },
                 },
@@ -247,7 +253,7 @@ const TodoList = () => {
                     </div>
                 ) : data?.data?.todos?.length ? (
                     data.data.todos.map(
-                        (todo: { title: string; id: string | number }, index: number) => (
+                        (todo: { title: string, description: string, id: string | number }, index: number) => (
                             <Todos
                                 index={index}
                                 {...todo}
@@ -276,6 +282,8 @@ const TodoList = () => {
                                 value={todoToUpdate.title}
                                 onChange={changeTodoValue}
                             />
+                            <textarea name="description" value={todoToUpdate.description} onChange={changeTodoValue} id="message" className="block p-2.5 w-full text-sm mt-3 outline-none text-gray-900 bg-gray-50 h-40 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here...">
+                            </textarea>
                         </div>
 
                         <div className="mt-4">
@@ -334,6 +342,7 @@ const TodoList = () => {
                     <form onSubmit={addTodo}>
                         <div className="mt-2">
                             <Input name="title" value={newTodo.title} onChange={getNewTodo} />
+                            <textarea id="message" name="description" value={newTodo.title} onChange={getNewTodo} className="block p-2.5 w-full mt-3 text-sm text-gray-900 outline-none h-40 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here..."></textarea>
                         </div>
                         <div className="mt-4">
                             <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">

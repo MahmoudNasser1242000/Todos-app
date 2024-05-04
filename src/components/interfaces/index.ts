@@ -15,4 +15,5 @@ export interface IQuery {
 export interface ITodo {
     id: string | number,
     title: string
+    description: string
 }
