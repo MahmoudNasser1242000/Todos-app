@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import styles from "./AllTodos.module.css"
 import customQuery from "../../config/CustomQuery";
 import { tokenContext } from "../../context/tokenContext";
@@ -9,10 +9,13 @@ interface IProps {
 
 }
 const AllTodos = ({ }: IProps) => {
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(1);
+  
   const getToken = useContext(tokenContext);
   const { data, isLoading, error } = customQuery({
-    queryKey: ["Todos-Generated"],
-    url: "todos",
+    queryKey: ["All-Todos", page, pageSize],
+    url: `todos/pagination[${page}]=1&pagination[${pageSize}]=50`,
     config: {
       headers: {
         Authorization: `Bearer ${getToken?.token}`,
@@ -20,6 +23,14 @@ const AllTodos = ({ }: IProps) => {
     },
   });
   console.log(data?.data?.data);
+
+  const pageIncrease = () => {
+    setPage((prev) => prev + 1)
+  }
+
+  const pageDecrease = () => {
+    setPage((prev) => prev - 1)
+  }
 
   const Error = error as AxiosError<IErrorApi>;
   return (

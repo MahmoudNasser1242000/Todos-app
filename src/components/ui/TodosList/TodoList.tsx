@@ -23,7 +23,7 @@ const TodoList = () => {
     let [action, setAction] = useState<string>("");
 
     const getToken = useContext(tokenContext);
-    const decodeToken = jwtDecode(`${getToken?.token}`);
+    const decodeToken: {id: number} = jwtDecode(`${getToken?.token}`);
     const [newTodo, setNewTodo] = useState({
         user: [decodeToken?.id],
         title: "",
@@ -48,6 +48,7 @@ const TodoList = () => {
         setTodoToUpdate({
             id: "",
             title: "",
+            description: ""
         });
     }
 
@@ -62,18 +63,32 @@ const TodoList = () => {
     }
 
     const todoAction = async (
-        method: string,
         url: string,
         meta: unknown,
         onSuccess: () => void
     ) => {
         setLoading(true);
         try {
-            const data = await axiosInstance[method](url, meta, {
-                headers: {
-                    Authorization: `Bearer ${getToken?.token}`,
-                },
-            });
+            let data;
+            if (action === "update") {
+                data = await axiosInstance.put(url,  meta, {
+                    headers: {
+                        Authorization: `Bearer ${getToken?.token}`,
+                    },
+                });
+            } else if (action === "delete") {
+                data = await axiosInstance.delete(url, {
+                    headers: {
+                        Authorization: `Bearer ${getToken?.token}`,
+                    },
+                });
+            } else {
+                data = await axiosInstance.post(url,  meta, {
+                    headers: {
+                        Authorization: `Bearer ${getToken?.token}`,
+                    },
+                });
+            }
             if (data?.status === 200) {
                 onSuccess();
             }
@@ -107,7 +122,6 @@ const TodoList = () => {
         e.preventDefault();
         if (todoToUpdate.title) {
             await todoAction(
-                "put",
                 `todos/${todoToUpdate.id}`,
                 { data: { title: todoToUpdate.title, description: todoToUpdate.description } },
                 onUpdateTodoSucess
@@ -137,7 +151,7 @@ const TodoList = () => {
 
     const deleteTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        await todoAction("delete", `todos/${todoToUpdate.id}`, null, onDeleteTodoSuccess);
+        await todoAction(`todos/${todoToUpdate.id}`, null, onDeleteTodoSuccess);
     };
 
     // =========================ADD TODO=========================
@@ -158,6 +172,7 @@ const TodoList = () => {
             return {
                 ...prev,
                 title: "",
+                description: ""
             };
         });
         refetch();
@@ -165,7 +180,7 @@ const TodoList = () => {
 
     const addTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        await todoAction("post", `todos`, { data: newTodo }, onAddTodoSuccess);
+        await todoAction(`todos`, {data: newTodo }, onAddTodoSuccess);
     };
 
     // =========================GENERATE TODO=========================
@@ -184,25 +199,27 @@ const TodoList = () => {
                 transition: Bounce,
             });
         }
-        refetch()
+        if (i === 49) {
+            refetch()
+        }
     };
+
     const generateTodo = async () => {
         for (let i = 0; i < 50; i++) {
             await todoAction(
-                "post",
-                "todos",
+                `todos`,
                 {
                     data: {
                         title: faker.word.words({ count: { min: 5, max: 10 } }),
                         description: faker.lorem.paragraphs({ min: 2, max: 3 }),
                         user: decodeToken?.id,
-                    },
+                    }
                 },
                 () => {
                     onGenerateTodosSuccess(i);
                 }
             );
-        }
+        };
     };
     return (
         <>
@@ -342,7 +359,7 @@ const TodoList = () => {
                     <form onSubmit={addTodo}>
                         <div className="mt-2">
                             <Input name="title" value={newTodo.title} onChange={getNewTodo} />
-                            <textarea id="message" name="description" value={newTodo.title} onChange={getNewTodo} className="block p-2.5 w-full mt-3 text-sm text-gray-900 outline-none h-40 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here..."></textarea>
+                            <textarea id="message" name="description" value={newTodo.description} onChange={getNewTodo} className="block p-2.5 w-full mt-3 text-sm text-gray-900 outline-none h-40 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here..."></textarea>
                         </div>
                         <div className="mt-4">
                             <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
