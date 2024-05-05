@@ -23,7 +23,7 @@ const TodoList = () => {
     let [action, setAction] = useState<string>("");
 
     const getToken = useContext(tokenContext);
-    const decodeToken: {id: number} = jwtDecode(`${getToken?.token}`);
+    const decodeToken: { id: number } = jwtDecode(`${getToken?.token}`);
     const [newTodo, setNewTodo] = useState({
         user: [decodeToken?.id],
         title: "",
@@ -71,7 +71,7 @@ const TodoList = () => {
         try {
             let data;
             if (action === "update") {
-                data = await axiosInstance.put(url,  meta, {
+                data = await axiosInstance.put(url, meta, {
                     headers: {
                         Authorization: `Bearer ${getToken?.token}`,
                     },
@@ -83,7 +83,7 @@ const TodoList = () => {
                     },
                 });
             } else {
-                data = await axiosInstance.post(url,  meta, {
+                data = await axiosInstance.post(url, meta, {
                     headers: {
                         Authorization: `Bearer ${getToken?.token}`,
                     },
@@ -102,7 +102,7 @@ const TodoList = () => {
 
     // =========================UPDATE TODO=========================
 
-    const changeTodoValue = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> ) => {
+    const changeTodoValue = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setTodoToUpdate((prev: ITodo) => {
             return {
@@ -157,7 +157,7 @@ const TodoList = () => {
     // =========================ADD TODO=========================
 
     const getNewTodo = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const {name, value} = e.target;
+        const { name, value } = e.target;
         setNewTodo((prev) => {
             return {
                 ...prev,
@@ -180,7 +180,7 @@ const TodoList = () => {
 
     const addTodo = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        await todoAction(`todos`, {data: newTodo }, onAddTodoSuccess);
+        await todoAction(`todos`, { data: newTodo }, onAddTodoSuccess);
     };
 
     // =========================GENERATE TODO=========================
@@ -285,100 +285,53 @@ const TodoList = () => {
                 )}
             </div>
 
-            {action === "update" ? (
-                <Modal
-                    title="Update Todo"
-                    err={err}
-                    isOpen={isOpen}
-                    closeModal={closeModal}
-                >
-                    <form onSubmit={updateTodo}>
-                        <div className="mt-2">
-                            <Input
-                                name="title"
-                                value={todoToUpdate.title}
-                                onChange={changeTodoValue}
-                            />
-                            <textarea name="description" value={todoToUpdate.description} onChange={changeTodoValue} id="message" className="block p-2.5 w-full text-sm mt-3 outline-none text-gray-900 bg-gray-50 h-40 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here...">
-                            </textarea>
-                        </div>
+            <Modal
+                title={action === "update" ? "Update Todo" : action === "delete" ? "Delete Todo" : "Add Todo"}
+                err={err}
+                isOpen={isOpen}
+                closeModal={closeModal}
+            >
+                <form onSubmit={action === "update" ? updateTodo : action === "delete" ? deleteTodo : addTodo}>
+                    <div className="mt-2">
+                        {
+                            action === "update" ?
+                                (
+                                    <>
+                                        <Input
+                                            name="title"
+                                            value={todoToUpdate.title}
+                                            onChange={changeTodoValue}
+                                        />
+                                        <textarea name="description" value={todoToUpdate.description} onChange={changeTodoValue} id="message" className="block p-2.5 w-full text-sm mt-3 outline-none text-gray-900 bg-gray-50 h-40 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here...">
+                                        </textarea>
+                                    </>
+                                ) : action === "delete" ? ("Are You Sure You Want To Delete This Todo?") :
+                                    (
+                                        <>
+                                            <Input name="title" value={newTodo.title} onChange={getNewTodo} />
+                                            <textarea id="message" name="description" value={newTodo.description} onChange={getNewTodo} className="block p-2.5 w-full mt-3 text-sm text-gray-900 outline-none h-40 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here..."></textarea>
+                                        </>
+                                    )
+                        }
+                    </div>
 
-                        <div className="mt-4">
-                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-                                {loading ? (
-                                    <>
-                                        <div
-                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                            role="status"
-                                        ></div>{" "}
-                                        <span>Loading...</span>
-                                    </>
-                                ) : (
-                                    "Update Your Todo"
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            ) : action === "delete" ? (
-                <Modal
-                    title="Delete Todo"
-                    err={err}
-                    isOpen={isOpen}
-                    closeModal={closeModal}
-                >
-                    <form onSubmit={deleteTodo}>
-                        <div className="mt-2">
-                            Are You Sure You Want To Delete This Todo?
-                        </div>
-
-                        <div className="mt-4">
-                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-                                {loading ? (
-                                    <>
-                                        <div
-                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                            role="status"
-                                        ></div>{" "}
-                                        <span>Loading...</span>
-                                    </>
-                                ) : (
-                                    "Delete Your Todo"
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            ) : (
-                <Modal
-                    title="Add New Todo"
-                    err={err}
-                    isOpen={isOpen}
-                    closeModal={closeModal}
-                >
-                    <form onSubmit={addTodo}>
-                        <div className="mt-2">
-                            <Input name="title" value={newTodo.title} onChange={getNewTodo} />
-                            <textarea id="message" name="description" value={newTodo.description} onChange={getNewTodo} className="block p-2.5 w-full mt-3 text-sm text-gray-900 outline-none h-40 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your thoughts here..."></textarea>
-                        </div>
-                        <div className="mt-4">
-                            <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-                                {loading ? (
-                                    <>
-                                        <div
-                                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-                                            role="status"
-                                        ></div>{" "}
-                                        <span> Loading...</span>
-                                    </>
-                                ) : (
-                                    "Add New Todo"
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            )}
+                    <div className="mt-4">
+                        <button className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                            {loading ? (
+                                <>
+                                    <div
+                                        className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                                        role="status"
+                                    ></div>{" "}
+                                    <span>Loading...</span>
+                                </>
+                            ) : (
+                                action === "update" ? "Update Your Todo" : action === "delete" ? "Delete Your Todo" : "Add New Todo"
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </Modal>            
         </>
     );
 };
